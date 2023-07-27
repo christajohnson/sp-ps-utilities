@@ -1,0 +1,25 @@
+# Install the SharePoint PnP PowerShell module (if not already installed)
+Install-Module SharePointPnPPowerShellOnline -Force
+
+# Install the ImportExcel module (if not already installed)
+Install-Module ImportExcel -Force
+
+# Connect to SharePoint Online
+Connect-PnPOnline -Url "https://your-sharepoint-site-url" -Credentials (Get-Credential)
+
+# Specify the path to the Excel file containing the quick links data
+$excelFilePath = "C:\Path\To\Your\Excel\File.xlsx"
+
+# Read the quick links data from the Excel file
+$quickLinks = Import-Excel -Path $excelFilePath -WorksheetName "Sheet1"
+
+# Loop through the quick links data and add them to the Quick Links list on the SharePoint site
+foreach ($link in $quickLinks) {
+    Add-PnPSPOListItem -List "Quick Links" -Values @{
+        "Title" = $link.Title
+        "URL" = $link.URL
+    }
+}
+
+# Disconnect from SharePoint Online
+Disconnect-PnPOnline
