@@ -1,0 +1,52 @@
+# Install SharePoint PnP PowerShell module
+Install-Module SharePointPnPPowerShellOnline -Force
+
+# Install ImportExcel module
+Install-Module ImportExcel -Force
+
+# Connect to SharePoint Online
+Connect-PnPOnline -Url "https://your-sharepoint-site-url" -Credentials (Get-Credential)
+
+# Specify the path to the Excel file containing the list and column information
+$excelFilePath = "C:\Path\To\Your\Excel\File.xlsx"
+
+# Read data from the Excel file
+$excelData = Import-Excel -Path $excelFilePath -WorksheetName "ListColumns"
+
+# Loop through the Excel data and create lists and columns
+foreach ($row in $excelData) {
+    $listName = $row.ListName
+    $columnName = $row.ColumnName
+    $columnType = $row.ColumnType
+    $displayName = $row.DisplayName
+    $isRequired = $row.Required -eq "Yes" # Assuming "Required" column has "Yes" or "No"
+    $choices = $null
+    $defaultValue = $null
+
+    # If the column type is Choice, set the Choices and Default Value
+    if ($columnType -eq "Choice") {
+        $choices = $row.Choices -split ";" # Assuming Choices in Excel are semicolon-separated
+        $defaultValue = $row.Default
+    }
+
+    # Create the list if it does not exist
+    if (-not (Get-PnPList -Identity $listName -ErrorAction SilentlyContinue)) {
+        New-PnPList -Title $listName -Template GenericList
+    }
+
+    # Create the column in the list
+    $columnOptions = @{
+        DisplayName = $displayName
+        Required = $isRequired
+    }
+
+    if ($columnType -eq "Choice") {
+        $columnOptions.Add("Choices", $choices)
+        $columnOptions.Add("DefaultValue", $defaultValue)
+    }
+
+    Add-PnPField -List $listName -DisplayName $columnName -Type $columnType @columnOptions
+}
+
+# Disconnect from SharePoint Online
+Disconnect-PnPOnline
